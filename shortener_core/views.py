@@ -1,4 +1,4 @@
-# url_app/views.py
+
 from django.views.generic import TemplateView, RedirectView
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -67,8 +67,6 @@ class HomeView(TemplateView):
                     short_code=short_code,
                     expires_at=expires_at
                 )
-                
-                # Generate the full shortened URL
                 short_url = request.build_absolute_uri(
                     reverse('redirect_url', args=[short_code])
                 )
@@ -103,13 +101,17 @@ class URLRedirectView(RedirectView):
     permanent = False
     def get_redirect_url(self, *args, **kwargs):
         short_code = kwargs['short_code']
-        url_obj = get_object_or_404(URL, short_code=short_code)
-        
+        url_obj = URL.objects.filter(short_code=short_code).last()
+        if not url_obj:
+            return reverse('url_not_found')
         if url_obj.is_expired:
-            # Redirect to expired page instead
             return reverse('url_expired')
         url_obj.increment_access_count()
         return url_obj.original_url
 @method_decorator(csrf_exempt, name='dispatch')
 class URLExpiredView(TemplateView):
     template_name = 'shortener_core/expired.html'
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UrlNotFound(TemplateView):
+    template_name ='shortener_core/not_found.html'
