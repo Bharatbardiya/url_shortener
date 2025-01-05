@@ -88,10 +88,6 @@
                                     <h6 class="mb-3">Your shortened URL:</h6>
                                     <div class="input-group">
                                         <input type="text" class="form-control" value="{{ submit_result.short_url }}" readonly>
-                                        <button class="btn btn-outline-secondary" type="button" 
-                                                onclick="navigator.clipboard.writeText('{{ submit_result.short_url }}')">
-                                            Copy
-                                        </button>
                                     </div>
                                     {% if submit_result.expires_at %}
                                         <div class="mt-2">
@@ -125,7 +121,7 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            
+                            <p style="font-size:11px;">The short code is the 8-digit alphanumeric code after the base URL. For example, in the URL http://localhost:8000/02f3396c/, "02f3396c" is the short code</p>
                             <button type="submit" name="lookup_url" class="btn btn-primary">
                                 Get URL Info
                             </button>
