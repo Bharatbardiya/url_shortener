@@ -15,7 +15,6 @@ from django.views.decorators.csrf import csrf_exempt
 class HomeView(TemplateView):
     template_name = 'shortener_core/home.html'
     def get_context_data(self, **kwargs):
-        # breakpoint()
         context = super().get_context_data(**kwargs)
         context['submit_form'] = URLSubmitForm()
         context['lookup_form'] = URLLookupForm()
@@ -103,14 +102,12 @@ class HomeView(TemplateView):
 class URLRedirectView(RedirectView):
     permanent = False
     def get_redirect_url(self, *args, **kwargs):
-        # breakpoint()
         short_code = kwargs['short_code']
         url_obj = get_object_or_404(URL, short_code=short_code)
         
         if url_obj.is_expired:
             # Redirect to expired page instead
             return reverse('url_expired')
-        breakpoint()
         url_obj.increment_access_count()
         return url_obj.original_url
 @method_decorator(csrf_exempt, name='dispatch')
