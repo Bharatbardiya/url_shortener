@@ -8,13 +8,12 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import URL
 from .forms import URLSubmitForm, URLLookupForm
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class HomeView(TemplateView):
     template_name = 'shortener_core/home.html'
-    authentication_classes = [] #disables authentication
-    permission_classes = [] #disables permission
-
     def get_context_data(self, **kwargs):
         # breakpoint()
         context = super().get_context_data(**kwargs)
@@ -32,13 +31,24 @@ class HomeView(TemplateView):
             if submit_form.is_valid():
                 original_url = submit_form.cleaned_data['url']
                 days = submit_form.cleaned_data['expiration_days']
-                
-                # Set expiration date if specified
                 expires_at = None
                 if days:
                     expires_at = timezone.now() + timedelta(days=days)
                 
-                # Generate short code and create URL object
+                url_entry = URL.objects.filter(original_url=original_url).last()
+                if url_entry:
+                    if expires_at:
+                        url_entry.expires_at = expires_at
+                        url_entry.save()
+                    short_url = request.build_absolute_uri(
+                        reverse('redirect_url', args=[url_entry.short_code])
+                    )
+                    context['submit_result'] = {
+                        'short_url': short_url,
+                        'expires_at': url_entry.expires_at
+                    }
+                    return self.render_to_response(context)
+                
                 short_code = URL.generate_short_code(original_url)
                 short_code_entry = URL.objects.filter(short_code=short_code).last()
                 
@@ -48,7 +58,10 @@ class HomeView(TemplateView):
                     total_tries+=1
                 
                 if total_tries>=100:
-                    return Response({"message": "unable to generate short code"}, status = status.HTTP_422_UNPROCESSABLE_ENTITY)
+                    context['submit_result'] = {
+                            'error': f'unable to generate short code'
+                        }
+                    return self.render_to_response(context)
                 
                 url_obj = URL.objects.create(
                     original_url=original_url,
@@ -86,10 +99,9 @@ class HomeView(TemplateView):
         
         return self.render_to_response(context)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class URLRedirectView(RedirectView):
     permanent = False
-    authentication_classes = [] #disables authentication
-    permission_classes = [] #disables permission
     def get_redirect_url(self, *args, **kwargs):
         # breakpoint()
         short_code = kwargs['short_code']
@@ -98,9 +110,9 @@ class URLRedirectView(RedirectView):
         if url_obj.is_expired:
             # Redirect to expired page instead
             return reverse('url_expired')
-        
+        breakpoint()
         url_obj.increment_access_count()
         return url_obj.original_url
-
+@method_decorator(csrf_exempt, name='dispatch')
 class URLExpiredView(TemplateView):
     template_name = 'shortener_core/expired.html'
