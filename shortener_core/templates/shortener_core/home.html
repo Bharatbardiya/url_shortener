@@ -1,0 +1,129 @@
+<!-- templates/url_app/home.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">URL Shortener</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- URL Shortening Form Section -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Shorten URL</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                {{ submit_form.url.label_tag }}
+                                {{ submit_form.url }}
+                                {% if submit_form.url.errors %}
+                                    <div class="text-danger">
+                                        {{ submit_form.url.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ submit_form.expiration_days.label_tag }}
+                                {{ submit_form.expiration_days }}
+                                {% if submit_form.expiration_days.errors %}
+                                    <div class="text-danger">
+                                        {{ submit_form.expiration_days.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <button type="submit" name="submit_url" class="btn btn-primary">
+                                Create Short URL
+                            </button>
+                        </form>
+
+                        {% if submit_result %}
+                        <div class="mt-4">
+                            <div class="alert alert-success">
+                                <h6 class="mb-3">Your shortened URL:</h6>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" value="{{ submit_result.short_url }}" readonly>
+                                    <button class="btn btn-outline-secondary" type="button" 
+                                            onclick="navigator.clipboard.writeText('{{ submit_result.short_url }}')">
+                                        Copy
+                                    </button>
+                                </div>
+                                {% if submit_result.expires_at %}
+                                <div class="mt-2">
+                                    <small class="text-muted">Expires: {{ submit_result.expires_at }}</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- URL Information Section -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">URL Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                {{ lookup_form.short_code.label_tag }}
+                                {{ lookup_form.short_code }}
+                                {% if lookup_form.short_code.errors %}
+                                    <div class="text-danger">
+                                        {{ lookup_form.short_code.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <button type="submit" name="lookup_url" class="btn btn-primary">
+                                Get URL Info
+                            </button>
+                        </form>
+
+                        {% if lookup_result %}
+                            {% if lookup_result.error %}
+                                <div class="alert alert-danger mt-4">
+                                    {{ lookup_result.error }}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info mt-4">
+                                    <h6 class="mb-3">URL Details:</h6>
+                                    <p><strong>Original URL:</strong><br>
+                                        <a href="{{ lookup_result.original_url }}" target="_blank">
+                                            {{ lookup_result.original_url }}
+                                        </a>
+                                    </p>
+                                    <p><strong>Access Count:</strong> {{ lookup_result.access_count }}</p>
+                                    {% if lookup_result.expires_at %}
+                                        <p><strong>Expires:</strong> {{ lookup_result.expires_at }}</p>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
