@@ -8,6 +8,7 @@ This project is a simplified URL shortener service that allows users to shorten 
 - **Expiration Date**: Users can set an expiration date for a shortened URL. Once expired, the URL will no longer be accessible.
 - **Access Count**: Tracks and displays how many times a shortened URL has been accessed.
 - **Error Handling**: Gracefully handles invalid URLs, duplicate submissions, non-existent short URLs, and expired URLs.
+- **Atomic Operations for Unique URLs**: Ensures that each generated short code is unique by using atomic operations and retrying up to 100 times if a conflict is detected.
 
 ## Setup Instructions
 
