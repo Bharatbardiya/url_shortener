@@ -10,6 +10,7 @@ from .models import URL
 from .forms import URLSubmitForm, URLLookupForm
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
 
 @method_decorator(csrf_exempt, name='dispatch')
 class HomeView(TemplateView):
@@ -36,25 +37,25 @@ class HomeView(TemplateView):
                 
                 url_entry = URL.objects.filter(original_url=original_url).last()
                 if url_entry:
-                    if expires_at:
-                        url_entry.expires_at = expires_at
-                        url_entry.save()
-                    short_url = request.build_absolute_uri(
-                        reverse('redirect_url', args=[url_entry.short_code])
-                    )
-                    context['submit_result'] = {
-                        'short_url': short_url,
-                        'expires_at': url_entry.expires_at
-                    }
-                    return self.render_to_response(context)
+                    if not url_entry.is_expired:
+                        short_url = request.build_absolute_uri(
+                            reverse('redirect_url', args=[url_entry.short_code])
+                        )
+                        context['submit_result'] = {
+                            'error': f'url already exists - {short_url}'
+                        }
+                        return self.render_to_response(context)
+                    else:
+                        url_entry.delete()
                 
-                short_code = URL.generate_short_code(original_url)
-                short_code_entry = URL.objects.filter(short_code=short_code).last()
-                
-                while short_code_entry and total_tries<100:
+                with transaction.atomic():
                     short_code = URL.generate_short_code(original_url)
                     short_code_entry = URL.objects.filter(short_code=short_code).last()
-                    total_tries+=1
+                    
+                    while short_code_entry and total_tries<100:
+                        short_code = URL.generate_short_code(original_url)
+                        short_code_entry = URL.objects.filter(short_code=short_code).last()
+                        total_tries+=1
                 
                 if total_tries>=100:
                     context['submit_result'] = {
